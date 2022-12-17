@@ -37,6 +37,8 @@ public class VisionTest extends LinearOpMode {
 
         while (!isStarted()) {
             telemetry.addData("ROTATION: ", junctionDetection.getPosition());
+          //telemetry.addData("X", TOPLEFT_ANCHOR_POINT.X.getPosition());
+          //telemetry.addData("Y", TOPLEFT_ANCHOR_POINT.y.getPosition());
             telemetry.update();
         }
 
