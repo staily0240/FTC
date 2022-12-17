@@ -50,10 +50,3 @@ sleeveDetection.getPosition()
 
 If all the initialization and download steps are completed, you will be able to run the `VisionTest.java` example OpMode and then preview the camera on your driver hub.
 
-## Contact
-
-If you need help with the pipeline or have trouble tuning, don't be afraid to reach out to us! <br />
-Discord: ```ProDCG#0641``` <br />
-Project: [Repository Link](https://github.com/KookyBotz/PowerPlaySleeveDetection)
-
-For repository specific concerns, feel free to make a fork of this repo, and send a PR.
