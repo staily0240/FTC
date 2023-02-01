@@ -23,6 +23,7 @@ package org.firstinspires.ftc.teamcode.auton;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -55,8 +56,8 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 import java.util.ArrayList;
 import java.util.List;
 
-@TeleOp
-public class Autonomo extends LinearOpMode
+@Autonomous
+public class Autoteste extends LinearOpMode
 {
 
     public DcMotor  RMF;    //Porta 0 - Motor Mecanum - Direita Frontal
@@ -460,7 +461,7 @@ public class Autonomo extends LinearOpMode
 
 //Processamento de Imagem:
 
-//-  Cone:
+    //-  Cone:
     public void idQRCode(){
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -629,6 +630,59 @@ public class Autonomo extends LinearOpMode
 
 
     }
+
+    private final Object sync = new Object();
+
+    private Rect maxRect = new Rect(600,1,1,1);
+
+    public int getRectHeight() {
+        synchronized (sync) {
+            return maxRect.height;
+        }
+    }
+    public int getRectWidth() {
+        synchronized (sync) {
+            return maxRect.width;
+        }
+    }
+    public int getRectX() {
+        synchronized (sync) {
+            return maxRect.x;
+        }
+    }
+    public int getRectY() {
+        synchronized (sync) {
+            return maxRect.y;
+        }
+    }
+    public double getRectMidpointX() {
+        synchronized (sync) {
+            return getRectX() + (getRectWidth() / 2.0);
+        }
+    }
+    public double getRectMidpointY() {
+        synchronized (sync) {
+            return getRectY() + (getRectHeight() / 2.0);
+        }
+    }
+    public Point getRectMidpointXY() {
+        synchronized (sync) {
+            return new Point(getRectMidpointX(), getRectMidpointY());
+        }
+    }
+    public double getAspectRatio() {
+        synchronized (sync) {
+            return getRectArea() / (CAMERA_HEIGHT * CAMERA_WIDTH);
+        }
+    }
+    public double getRectArea() {
+        synchronized (sync) {
+            return maxRect.area();
+        }
+    }
+
+
+
 
     public void testing(ContourPipeline myPipeline){
         if(lowerruntime + 0.05 < getRuntime()){
