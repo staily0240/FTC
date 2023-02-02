@@ -23,7 +23,6 @@ package org.firstinspires.ftc.teamcode.auton;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -56,8 +55,8 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 import java.util.ArrayList;
 import java.util.List;
 
-@Autonomous
-public class Autoteste extends LinearOpMode
+@TeleOp
+public class Autonomo extends LinearOpMode
 {
 
     public DcMotor  RMF;    //Porta 0 - Motor Mecanum - Direita Frontal
@@ -134,6 +133,9 @@ public class Autoteste extends LinearOpMode
 
 //======================================= Robô =====================================================
 
+    double currentPosition_MSE, controleEncoder_MSE, targetPosition_MSE = 1823,  controleForce_MSE, max_MSE = -7000;
+    double proporcional_MSE, erro_MSE, kP_MSE = 0.0008;
+
     double PID_loc;
     double proporcional_loc, integral_loc, derivada_loc;
     double kP_loc = 0.02, kI_loc = 0, kD_loc = 0.002;
@@ -141,6 +143,13 @@ public class Autoteste extends LinearOpMode
     double erro_loc, ultErro_loc;
 
     double distanceF, distanceB;
+
+    double currentPosition_ATB, targetPosition_ATB = 1950, controleEncoder_ATB;
+
+    double PID_ATB;
+    double proporcional_ATB, integral_ATB, derivada_ATB;
+    double kP_ATB = 0.0008, kI_ATB = 0.00085, kD_ATB = 0;
+    double erro_ATB;
 
     static final double MAX_POS_D     =  0.2;     // Maximum rotational position 0.5
     static final double MIN_POS_D     =  0.0;     // Minimum rotational position    certo
@@ -162,43 +171,84 @@ public class Autoteste extends LinearOpMode
 
         initHardware();
 
-        JuncaoInit();
+//        JuncaoInit();
 
 //        idQRCode();
 
 //        telemetry.addData("Eixo X:\t", cv.eixoX_juncao);
 //        telemetry.addData("Eixo Y:\t", cv.eixoY_juncao);
 //        telemetry.update();
+        controleEncoder_MSE = MSE.getCurrentPosition();
+        controleEncoder_ATB = MAT.getCurrentPosition();
+
+        getAbsoluteAngleVariable = getAbsoluteAngle();
 
         waitForStart();
 
         /* You wouldn't have this in your autonomous, this is just to prevent the sample from ending */
 
 
+        statusGarra(false);
 
-//        getAbsoluteAngleVariable = getAbsoluteAngle();
-//
-//        statusGarra(false);
-//
-//        runToStation();
-//
-//        statusGarra(true);
-//
-//        turnPID(90);
-//
-//        setAllPower(0);
+        ajusteMSE();
+
+        runToStation();
+
+        statusGarra(true);
+
+        setAllPower(0.2);
+        sleep(500);
+
+        turnPID(90);
+
+        setAllPower(0);
+
+        setPID_ATB();
 
         runToJuncao();
 
-//        searchingJunction();
+        searchingJunction();
 
-        telemetry.addData("Eixo X:\t",eixoX_juncao);
-        telemetry.addData("Eixo Y :\t",eixoY_juncao);
+        coroar();
 
+    }
+
+    private void coroar() {
+
+        do{
+
+            distanceF = distanceSensorF.getDistance(DistanceUnit.CM);
+
+            erro_loc = -(8 - distanceF);
+
+            proporcional_loc = erro_loc * kP_loc;
+
+            if(distanceF > 30){
+                proporcional_loc /= 2;
+            }
+
+            setAllPower(proporcional_loc);
+
+            telemetry.addData("Proporcional:\t",proporcional_loc);
+            telemetry.addData("Distancia Frente:\t",distanceF);
+            telemetry.addData("Erro_Loc:\t",erro_loc);
+            telemetry.update();
+
+        }while (erro_loc > 0);
+
+        setAllPower(0);
     }
 
     //Atalhos
 
+    public void ajusteMSE() {
+        do {
+            distanceF = distanceSensorF.getDistance(DistanceUnit.CM);
+            MSE.setPower(0.2);
+
+        }while (distanceF < 30);
+        MSE.setPower(0);
+    }
 
     public void runToStation(){
 
@@ -209,6 +259,10 @@ public class Autoteste extends LinearOpMode
             erro_loc = -(11.5 - distanceF);
 
             proporcional_loc = erro_loc * kP_loc;
+
+            if(distanceF > 30){
+                proporcional_loc /= 2;
+            }
 
             setAllPower(proporcional_loc);
 
@@ -224,22 +278,22 @@ public class Autoteste extends LinearOpMode
 
     public void runToJuncao() {
 
-//        setAllPower(-0.2);
-//        sleep(500);
+        setAllPower(-0.2);
+        sleep(500);
 
         final double kP_loc = 0.015;
 
-//        do {
-//
-//            distanceB = distanceSensorB.getDistance(DistanceUnit.CM);
-//
-//            erro_loc = (60.0 - distanceB);
-//
-//            proporcional_loc = erro_loc * kP_loc;
-//
-//            setAllPower(proporcional_loc);
-//
-//        }while (erro_loc > 0);
+        do {
+
+            distanceB = distanceSensorB.getDistance(DistanceUnit.CM);
+
+            erro_loc = (60.0 - distanceB);
+
+            proporcional_loc = erro_loc * kP_loc;
+
+            setAllPower(proporcional_loc);
+
+        }while (erro_loc > 0);
 
         while(1>0){
             telemetry.addData("Eixo x Junção:\t",borderLeftX * CAMERA_WIDTH * CAMERA_HEIGHT);
@@ -262,8 +316,25 @@ public class Autoteste extends LinearOpMode
         servoGarra2.setPosition(position_E);             //Esquerda
     }
 
+    public void setPID_ATB(){
+        do {
+
+            currentPosition_ATB = Math.abs(MAT.getCurrentPosition()) -  Math.abs(controleEncoder_ATB);
+            erro_ATB = targetPosition_ATB - currentPosition_ATB;
+            proporcional_ATB = erro_ATB * kP_ATB;
+
+            MAT.setPower(proporcional_ATB);
+
+            telemetry.addData("Erro", erro_ATB);
+            telemetry.update();
+
+        }while (Math.abs(erro_ATB) > 50);
+
+        MAT.setPower(0.1);
+    }
+
     public void searchingJunction() {
-        double motorPower = 0.2, erro = Math.abs(firstAngRotation - getAbsoluteAngle());
+        double motorPower, erro;
 
         do {
             TurnPIDController pid = new TurnPIDController(firstAngRotation, 0.01, 0, 0.003);
@@ -272,7 +343,7 @@ public class Autoteste extends LinearOpMode
             motorPower = 0.4;
             erro = Math.abs(firstAngRotation - getAbsoluteAngle());
 
-            distanceF = distanceSensorB.getDistance(DistanceUnit.CM);
+            distanceF = distanceSensorF.getDistance(DistanceUnit.CM);
 
             if(erro > 0.8) {
                 motorPower = (pid.update(getAbsoluteAngle()));
@@ -287,23 +358,24 @@ public class Autoteste extends LinearOpMode
             telemetry.update();
             telemetry.addData("Erro:\t", Math.abs(firstAngRotation - getAbsoluteAngle()));
 
-        }while (distanceF > 10);
+        }while (distanceF > 40);
 
 
-        while(1>0) {
-
-            distanceF = distanceSensorB.getDistance(DistanceUnit.CM);
-
-            telemetry.addLine("FIM");
-            telemetry.addData("Distancia Frente:\t", distanceF);
-            telemetry.addData("First Ang Rotation:\t", firstAngRotation);
-            telemetry.update();
-
-            setAllPower(0);
-        }
+//        while(1>0) {
+//
+//            distanceF = distanceSensorF.getDistance(DistanceUnit.CM);
+//
+//            telemetry.addLine("FIM");
+//            telemetry.addData("Distancia Frente:\t", distanceF);
+//            telemetry.addData("First Ang Rotation:\t", firstAngRotation);
+//            telemetry.update();
+//
+//            setAllPower(0);
+//        }
     }
 
-    //Gyro
+
+//    Gyro
 
     public double getAbsoluteAngle() {
         return imu.getAngularOrientation(
@@ -461,7 +533,7 @@ public class Autoteste extends LinearOpMode
 
 //Processamento de Imagem:
 
-    //-  Cone:
+//-  Cone:
     public void idQRCode(){
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -591,8 +663,7 @@ public class Autoteste extends LinearOpMode
 //        telemetry.addLine(String.format("Rotation Roll: %.2f degrees", Math.toDegrees(detection.pose.roll)));
     }
 
-    public void JuncaoInit()
-    {
+    public void JuncaoInit(){
         // OpenCV webcam
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
@@ -630,59 +701,6 @@ public class Autoteste extends LinearOpMode
 
 
     }
-
-    private final Object sync = new Object();
-
-    private Rect maxRect = new Rect(600,1,1,1);
-
-    public int getRectHeight() {
-        synchronized (sync) {
-            return maxRect.height;
-        }
-    }
-    public int getRectWidth() {
-        synchronized (sync) {
-            return maxRect.width;
-        }
-    }
-    public int getRectX() {
-        synchronized (sync) {
-            return maxRect.x;
-        }
-    }
-    public int getRectY() {
-        synchronized (sync) {
-            return maxRect.y;
-        }
-    }
-    public double getRectMidpointX() {
-        synchronized (sync) {
-            return getRectX() + (getRectWidth() / 2.0);
-        }
-    }
-    public double getRectMidpointY() {
-        synchronized (sync) {
-            return getRectY() + (getRectHeight() / 2.0);
-        }
-    }
-    public Point getRectMidpointXY() {
-        synchronized (sync) {
-            return new Point(getRectMidpointX(), getRectMidpointY());
-        }
-    }
-    public double getAspectRatio() {
-        synchronized (sync) {
-            return getRectArea() / (CAMERA_HEIGHT * CAMERA_WIDTH);
-        }
-    }
-    public double getRectArea() {
-        synchronized (sync) {
-            return maxRect.area();
-        }
-    }
-
-
-
 
     public void testing(ContourPipeline myPipeline){
         if(lowerruntime + 0.05 < getRuntime()){
